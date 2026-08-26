@@ -1,0 +1,23 @@
+data_loader.preprocess_data()
+print("\nPreprocessed Data Sample:")
+print(data_loader.data.head())
+
+X_train, X_test, y_train, y_test = data_loader.get_data_split()
+
+# Visualizing the Strategy
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+# Before Oversampling
+sns.countplot(x=y_train, ax=axes[0], palette='viridis')
+axes[0].set_title(f"Training Data Before\n(Minority: {sum(y_train==1)})")
+axes[0].bar_label(axes[0].containers[0])
+
+# Apply Oversampling
+X_train_res, y_train_res = data_loader.oversample(X_train, y_train)
+
+# After Oversampling
+sns.countplot(x=y_train_res, ax=axes[1], palette='viridis')
+axes[1].set_title(f"Training Data After\n(Minority: {sum(y_train_res==1)})")
+axes[1].bar_label(axes[1].containers[0])
+plt.tight_layout()
+plt.show()
