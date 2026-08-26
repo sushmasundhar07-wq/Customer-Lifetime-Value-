@@ -1,0 +1,27 @@
+# Initialize and Load
+data_loader = DataLoader()
+data = data_loader.load_dataset()
+
+print("Data Shape:", data.shape)
+print(data.head())
+print("\nData Info:")
+data.info()
+
+# Figure 1: Class Imbalance
+plt.figure(figsize=(6, 4))
+sns.countplot(x='stroke', data=data, palette='viridis')
+plt.title("Original Class Distribution (0=No Stroke, 1=Stroke)")
+plt.show()
+
+# Figure 2: Feature Distributions by Target
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+sns.boxplot(x='stroke', y='age', data=data, ax=axes[0], palette='coolwarm')
+axes[0].set_title("Age Distribution vs Stroke")
+
+sns.boxplot(x='stroke', y='avg_glucose_level', data=data, ax=axes[1], palette='coolwarm')
+axes[1].set_title("Glucose Level vs Stroke")
+
+sns.boxplot(x='stroke', y='bmi', data=data, ax=axes[2], palette='coolwarm')
+axes[2].set_title("BMI vs Stroke")
+plt.tight_layout()
+plt.show()
