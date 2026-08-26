@@ -1,0 +1,61 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+import shap
+import warnings
+
+warnings.filterwarnings("ignore")
+shap.initjs()
+
+class DataLoader:
+    def __init__(self, filepath='/kaggle/input/stroke-prediction-dataset/healthcare-dataset-stroke-data.csv'):
+        self.filepath = filepath
+        self.data = None
+        self.X = None
+        self.y = None
+        self.encoders = {}
+
+    def load_dataset(self):
+        self.data = pd.read_csv(self.filepath)
+        return self.data
+
+    def preprocess_data(self):
+        # Impute BMI with mean
+        self.data['bmi'] = pd.to_numeric(self.data['bmi'], errors='coerce')
+        imputer = SimpleImputer(strategy='mean')
+        self.data['bmi'] = imputer.fit_transform(self.data[['bmi']])
+
+        # Set ID as index
+        if 'id' in self.data.columns:
+            self.data.set_index('id', inplace=True)
+        # Encode Categorical Variables
+        cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
+        for col in cat_cols:
+            le = LabelEncoder()
+            self.data[col] = le.fit_transform(self.data[col])
+            self.encoders[col] = le
+
+        self.X = self.data.drop('stroke', axis=1)
+        self.y = self.data['stroke']
+        return self.data
+
+    def get_data_split(self):
+        return train_test_split(self.X, self.y, test_size=0.2, random_state=42, stratify=self.y)
+
+    def oversample(self, X_train, y_train):
+        # Manual Oversampling (Duplicates minority class)
+        train_data = pd.concat([X_train, y_train], axis=1)
+        majority = train_data[train_data['stroke'] == 0]
+        minority = train_data[train_data['stroke'] == 1]
+
+        minority_upsampled = minority.sample(replace=True, n=len(majority), random_state=42)
+        upsampled_data = pd.concat([majority, minority_upsampled])
+
+        return upsampled_data.drop('stroke', axis=1), upsampled_data['stroke']
