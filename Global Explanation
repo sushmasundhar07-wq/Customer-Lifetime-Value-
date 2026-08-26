@@ -1,0 +1,3 @@
+plt.figure()
+plt.title("Global Feature Importance (Summary Plot)")
+shap.summary_plot(shap_values_positive, X_test, show=True)
