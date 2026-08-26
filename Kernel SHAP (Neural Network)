@@ -1,0 +1,60 @@
+# Prepare Data (Neural Networks require scaling)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train_res)
+X_test_scaled = scaler.transform(X_test)
+
+# Train Neural Network (MLP)
+mlp = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=200, random_state=42)
+mlp.fit(X_train_scaled, y_train_res)
+print(f"Neural Network Accuracy: {accuracy_score(y_test, mlp.predict(X_test_scaled)):.4f}")
+
+# Create Kernel Explainer
+background = shap.kmeans(X_train_scaled, 20)
+
+# Define explainer for the Probability of Class 1 (Stroke)
+k_explainer = shap.KernelExplainer(lambda x: mlp.predict_proba(x)[:, 1], background)
+
+# Define the specific Patient IDs we analyzed in the Random Forest section
+target_ids = [34567, 10995, 11762]
+titles = [
+    "Neural Network View: Patient 34567 (High Risk Profile)",
+    "Neural Network View: Patient 10995 (Elderly/Healthy)",
+    "Neural Network View: Patient 11762 (Missed Stroke Case)"
+]
+
+print("Generating Neural Network explanations for specific patients...")
+
+for pid, title in zip(target_ids, titles):
+    if pid in X_test.index:
+        # 2. Find the location (integer index) of the patient in X_test
+        loc_idx = X_test.index.get_loc(pid)
+        
+        # 3. Get the scaled feature data for this single patient
+        patient_data_scaled = X_test_scaled[loc_idx].reshape(1, -1)
+        
+        # 4. Calculate Kernel SHAP values for just this instance
+        shap_values_single = k_explainer.shap_values(patient_data_scaled)
+        
+        # 5. Generate the Force Plot
+        print(f"\n>>> {title}")
+        # Check predicted probability by NN
+        prob_stroke = mlp.predict_proba(patient_data_scaled)[0][1]
+        print(f"Neural Network Predicted Stroke Probability: {prob_stroke:.2f}")
+
+# Calculate SHAP Values
+print("Calculating Kernel SHAP values (Subset of 100 samples)...")
+shap_values_kernel = k_explainer.shap_values(X_test_scaled[0:100])
+
+# Visualize Neural Network Importance
+plt.figure()
+plt.title("Neural Network Feature Importance (Kernel SHAP)")
+shap.summary_plot(shap_values_kernel, X_test.iloc[0:100], feature_names=X_test.columns, show=True)
+        shap.force_plot(
+            k_explainer.expected_value, 
+            shap_values_single[0],       # SHAP values for the single sample
+            X_test.iloc[loc_idx, :],     # Use original (unscaled) data for display so numbers make sense
+            matplotlib=True,
+            show=True
+        )
+    else:
+        print(f"Patient {pid} not found in test set.")
