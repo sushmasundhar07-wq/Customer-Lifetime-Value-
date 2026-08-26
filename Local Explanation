@@ -1,0 +1,31 @@
+# Create a dataframe to compare Actual vs Predicted
+results = X_test.copy()
+results['Actual'] = y_test
+results['Predicted'] = y_pred
+
+def plot_patient_case(condition, title):
+    indices = results[condition].index
+    if len(indices) > 0:
+        patient_id = indices[0]
+        loc_idx = X_test.index.get_loc(patient_id)
+        
+        print(f"\n>>> {title} (Patient ID: {patient_id})")
+        # Display Force Plot
+        shap.force_plot(
+            explainer.expected_value[1], 
+            shap_values_positive[loc_idx,:], 
+            X_test.iloc[loc_idx,:], 
+            matplotlib=True,
+            show=True
+        )
+    else:
+        print(f"\n>>> {title}: No matching patients found.")
+
+# Case 1: True Positive (Correctly identified High Risk)
+plot_patient_case((results['Actual'] == 1) & (results['Predicted'] == 1), "True Positive (Correct Diagnosis)")
+
+# Case 2: False Positive (Healthy patient flagged as High Risk)
+plot_patient_case((results['Actual'] == 0) & (results['Predicted'] == 1), "False Positive (False Alarm)")
+
+# Case 3: False Negative (Stroke patient missed by AI)
+plot_patient_case((results['Actual'] == 1) & (results['Predicted'] == 0), "False Negative (Missed Diagnosis)")
